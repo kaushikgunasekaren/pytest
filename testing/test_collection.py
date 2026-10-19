@@ -2046,6 +2046,30 @@ def test_namespace_packages(pytester: Pytester, import_mode: str):
     )
 
 
+class TestFileArgumentsCollection:
+    def test_parent_dir_collected_once_for_many_file_args(self, pytester: Pytester) -> None:
+        """Passing many file arguments from the same directory collects the
+        parent directory once, not once per argument (#15221)."""
+        sub = pytester.mkdir("sub")
+        for i in range(5):
+            sub.joinpath(f"test_{i}.py").write_text(f"def test_{i}(): pass\n", "utf-8")
+
+        class CollectFileCounter:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def pytest_collect_file(self, file_path: Path, parent) -> None:
+                self.calls += 1
+
+        counter = CollectFileCounter()
+        pytester.inline_run(
+            "--collect-only",
+            *(str(sub / f"test_{i}.py") for i in range(5)),
+            plugins=[counter],
+        )
+        assert counter.calls == 5
+
+
 class TestOverlappingCollectionArguments:
     """Test that overlapping collection arguments (e.g. `pytest a/b a
     a/c::TestIt) are handled correctly (#12083)."""
