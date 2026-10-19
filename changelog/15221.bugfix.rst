@@ -1,0 +1,3 @@
+Fixed an ``O(file arguments x directory size)`` collection slowdown when many test files
+from the same directory are passed explicitly on the command line: the parent directory
+is no longer re-collected once per file argument.
